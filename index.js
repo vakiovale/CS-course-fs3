@@ -19,15 +19,23 @@ app.get('/api/persons', (request, response) => {
   Person
     .find({})
     .then(persons => {
-      response.json(persons.map(formatPerson))
+      response.json(persons.map(Person.format))
     })
 })
 
 app.get('/api/persons/:id', (request, response) => {
   Person
     .findById(request.params.id)
-    .then(persons => {
-      response.json(persons.map(formatPerson))
+    .then(person => {
+      if(person) {
+        response.json(Person.format(person))
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(404).end()
     })
 })
 
@@ -60,17 +68,9 @@ app.post('/api/persons', (request, response) => {
   person
     .save()
     .then(savedPerson => {
-      response.json(formatPerson(person))
+      response.json(Person.format(person))
     })
 })
-
-const formatPerson = (person) => {
-  return {
-    name: person.name,
-    number: person.number,
-    id: person._id
-  }
-}
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
