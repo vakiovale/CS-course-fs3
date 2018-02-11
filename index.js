@@ -1,5 +1,26 @@
 const express = require('express')
 const app = express()
+const bodyParser = require('body-parser')
+
+app.use(bodyParser.json())
+
+let persons = [
+  {
+    name: "Arto Hellas",
+    number: "040-123456",
+    id: 1
+  },
+  {
+    name: "Martti Tienari",
+    number: "040-123456",
+    id: 2
+  },
+  {
+    name: "Arto Järvinen",
+    number: "040-123456",
+    id: 3
+  }
+]
 
 let notes = [
   {
@@ -26,10 +47,63 @@ app.get('/', (req, res) => {
   res.send('<h1>Hello World!</h1>')
 })
 
-app.get('/notes', (req, res) => {
-  res.json(notes)
+app.get('/persons', (request, response) => {
+  response.json(persons)
 })
 
+app.get('/info', (request, response) => {
+  const numberOfPersons = persons.length
+  const date = new Date().toString()
+  response.send(`
+    <div>
+      puhelinluettelossa ${numberOfPersons} henkilön tiedot
+    </div>
+    <div>
+      ${date} 
+    </div>
+  `)
+})
+
+app.get('/api/persons/:id', (request, response) => {
+  const id = Number(request.params.id)
+  const person = persons.find(person => person.id === id)
+
+  if(person) {
+    response.json(person)
+  } else {
+    response.status(404).end()
+  }
+})
+
+app.delete('/api/persons/:id', (request, response) => {
+  const id = Number(request.params.id)
+  persons = persons.filter(person => person.id !== id)
+  response.status(204).end()
+})
+
+app.post('/notes', (request, response) => {
+  const body = request.body
+
+  if(body.content === undefined) {
+    return response.status(400).json({ error: 'content missing' })
+  }
+
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    date: new Date(),
+    id: generateId()
+  }
+
+  notes = notes.concat(note)
+  console.log(note)
+  response.json(note)
+})
+
+const generateId = () => {
+  const maxId = notes.length > 0 ? notes.map(n => n.id).sort().reverse()[0] : 0
+  return maxId + 1
+}
 
 const port = 3001
 app.listen(port, () => {
