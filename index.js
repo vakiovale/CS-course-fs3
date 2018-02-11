@@ -15,6 +15,20 @@ app.use(morgan(':method :url :data :status :res[content-length] - :response-time
 app.use(cors())
 app.use(express.static('build'))
 
+app.get('/info', (request, response) => {
+  let numberOfPersons = Person.count({}, function(error, count) {
+    const date = new Date().toString()
+    response.send(`
+      <div>
+        puhelinluettelossa ${count} henkilön tiedot
+      </div>
+      <div>
+        ${date} 
+      </div>
+    `)
+  })
+})
+
 app.get('/api/persons', (request, response) => {
   Person
     .find({})
@@ -40,13 +54,42 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
   Person
-    .findById(request.params.id)
-    .remove()
-    .then(persons => {
+    .findByIdAndRemove(request.params.id)
+    .then(result => {
       response.status(204).end()
     })
+    .catch(error => {
+      response.status(400).end()
+    })
+})
+
+app.put('/api/persons/:id', (request, response) => {
+  const body = request.body
+
+  if(body.name === undefined) {
+    return response.status(400).json({ error: 'name missing' })
+  }
+
+  if(body.number === undefined) {
+    return response.status(400).json({ error: 'number missing' })
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person
+    .findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(Person.format(updatedPerson))
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(400).end()
+    })
+  
 })
 
 app.post('/api/persons', (request, response) => {
