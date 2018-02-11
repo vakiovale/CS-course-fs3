@@ -22,32 +22,7 @@ let persons = [
   }
 ]
 
-let notes = [
-  {
-    id: 1,
-    content: 'HTML on helppoa',
-    date: '2017-12-10T17:30:31.098Z',
-    important: true
-  },
-  {
-    id: 2,
-    content: 'Selain pystyy suorittamaan vain javascriptiä',
-    date: '2017-12-10T18:39:34.091Z',
-    important: false
-  },
-  {
-    id: 3,
-    content: 'HTTP-protokollan tärkeimmät metodit ovat GET ja POST',
-    date: '2017-12-10T19:20:14.298Z',
-    important: true
-  }
-]
-
-app.get('/', (req, res) => { 
-  res.send('<h1>Hello World!</h1>')
-})
-
-app.get('/persons', (request, response) => {
+app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
@@ -81,28 +56,33 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
-app.post('/notes', (request, response) => {
+app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  if(body.content === undefined) {
-    return response.status(400).json({ error: 'content missing' })
+  if(body.name === undefined) {
+    return response.status(400).json({ error: 'name missing' })
   }
 
-  const note = {
-    content: body.content,
-    important: body.important || false,
-    date: new Date(),
+  if(body.number === undefined) {
+    return response.status(400).json({ error: 'number missing' })
+  }
+
+  if(persons.some(person => person.name === body.name)) {
+    return response.status(400).json({ error: 'name already exists' })
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
     id: generateId()
   }
 
-  notes = notes.concat(note)
-  console.log(note)
-  response.json(note)
+  persons = persons.concat(person)
+  response.json(person)
 })
 
 const generateId = () => {
-  const maxId = notes.length > 0 ? notes.map(n => n.id).sort().reverse()[0] : 0
-  return maxId + 1
+  return Math.floor(Math.random() * 9999999)
 }
 
 const port = 3001
