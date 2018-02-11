@@ -3,6 +3,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(bodyParser.json())
 
@@ -14,56 +15,30 @@ app.use(morgan(':method :url :data :status :res[content-length] - :response-time
 app.use(cors())
 app.use(express.static('build'))
 
-let persons = [
-  {
-    name: "Arto Hellas",
-    number: "040-123456",
-    id: 1
-  },
-  {
-    name: "Martti Tienari",
-    number: "040-123456",
-    id: 2
-  },
-  {
-    name: "Arto Järvinen",
-    number: "040-123456",
-    id: 3
-  }
-]
-
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
-})
-
-app.get('/info', (request, response) => {
-  const numberOfPersons = persons.length
-  const date = new Date().toString()
-  response.send(`
-    <div>
-      puhelinluettelossa ${numberOfPersons} henkilön tiedot
-    </div>
-    <div>
-      ${date} 
-    </div>
-  `)
+  Person
+    .find({})
+    .then(persons => {
+      response.json(persons.map(formatPerson))
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const person = persons.find(person => person.id === id)
-
-  if(person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
-  }
+  Person
+    .findById(request.params.id)
+    .then(persons => {
+      response.json(persons.map(formatPerson))
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
   const id = Number(request.params.id)
-  persons = persons.filter(person => person.id !== id)
-  response.status(204).end()
+  Person
+    .findById(request.params.id)
+    .remove()
+    .then(persons => {
+      response.status(204).end()
+    })
 })
 
 app.post('/api/persons', (request, response) => {
@@ -77,22 +52,24 @@ app.post('/api/persons', (request, response) => {
     return response.status(400).json({ error: 'number missing' })
   }
 
-  if(persons.some(person => person.name === body.name)) {
-    return response.status(400).json({ error: 'name already exists' })
-  }
-
-  const person = {
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId()
-  }
+  })
 
-  persons = persons.concat(person)
-  response.json(person)
+  person
+    .save()
+    .then(savedPerson => {
+      response.json(formatPerson(person))
+    })
 })
 
-const generateId = () => {
-  return Math.floor(Math.random() * 9999999)
+const formatPerson = (person) => {
+  return {
+    name: person.name,
+    number: person.number,
+    id: person._id
+  }
 }
 
 const PORT = process.env.PORT || 3001
