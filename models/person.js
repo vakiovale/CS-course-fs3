@@ -1,7 +1,6 @@
 const mongoose = require('mongoose')
 
-const url = 'mongodb://user:<passwd>@ds113136.mlab.com:13136/cs-course-fullstack-persons'
-
+const url = process.env.MONGODB_URI 
 mongoose.connect(url)
 
 const personSchema = new mongoose.Schema({
