@@ -7,7 +7,7 @@ const Person = require('./models/person')
 
 app.use(bodyParser.json())
 
-morgan.token('data', function(request, response) {
+morgan.token('data', function(request) {
   return JSON.stringify(request.body)
 })
 
@@ -16,7 +16,7 @@ app.use(cors())
 app.use(express.static('build'))
 
 app.get('/info', (request, response) => {
-  let numberOfPersons = Person.count({}, function(error, count) {
+  Person.count({}, function(error, count) {
     const date = new Date().toString()
     response.send(`
       <div>
@@ -56,10 +56,10 @@ app.get('/api/persons/:id', (request, response) => {
 app.delete('/api/persons/:id', (request, response) => {
   Person
     .findByIdAndRemove(request.params.id)
-    .then(result => {
+    .then(() => {
       response.status(204).end()
     })
-    .catch(error => {
+    .catch(() => {
       response.status(400).end()
     })
 })
@@ -89,7 +89,6 @@ app.put('/api/persons/:id', (request, response) => {
       console.log(error)
       response.status(400).end()
     })
-  
 })
 
 app.post('/api/persons', (request, response) => {
@@ -108,10 +107,22 @@ app.post('/api/persons', (request, response) => {
     number: body.number,
   })
 
-  person
-    .save()
-    .then(savedPerson => {
-      response.json(Person.format(person))
+  Person
+    .find({ name: person.name })
+    .then(samePerson => {
+      if(samePerson.length > 0) {
+        throw new Error()
+      }
+    })
+    .then(() => {
+      person
+        .save()
+        .then(() => {
+          return response.json(Person.format(person))
+        })
+    })
+    .catch(() => {
+      return response.status(400).json({ error: 'name exists' })
     })
 })
 
